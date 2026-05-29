@@ -177,13 +177,11 @@ Garante que o conteúdo é historicamente exato, rigoroso e pedagógico. Adapta 
     }
   });
 
-  let isProduction = false;
-  if (typeof __filename !== "undefined") {
-    isProduction = __filename.endsWith("server.cjs");
-  }
-  if (process.env.NODE_ENV === "production") {
-    isProduction = true;
-  }
+  const isProduction = typeof __filename !== "undefined"
+    ? __filename.endsWith("server.cjs")
+    : (typeof import.meta !== "undefined" && import.meta.url
+       ? import.meta.url.endsWith("server.cjs") || import.meta.url.includes("/dist/")
+       : false);
 
   const distPath = isProduction ? currentDirname : path.join(currentDirname, "dist");
 
