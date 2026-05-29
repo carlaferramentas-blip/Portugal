@@ -20,6 +20,20 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
+  const requestLogs: string[] = [];
+  app.use((req, res, next) => {
+    const start = Date.now();
+    res.on("finish", () => {
+      const duration = Date.now() - start;
+      const logLine = `${new Date().toISOString()} - ${req.method} ${req.originalUrl} - Status: ${res.statusCode} - ${duration}ms`;
+      requestLogs.push(logLine);
+      if (requestLogs.length > 200) {
+        requestLogs.shift();
+      }
+    });
+    next();
+  });
+
   app.use(express.json());
 
   // Initialize Gemini client lazily to prevent crashing on boot if key is temporarily missing
@@ -43,6 +57,21 @@ async function startServer() {
   }
 
   // API endpoint for generating custom study guides / personalized summaries
+  app.get("/api/debug", (req, res) => {
+    res.json({
+      isProduction,
+      env: process.env.NODE_ENV,
+      __filename: typeof __filename !== "undefined" ? __filename : "undefined",
+      cwd: process.cwd(),
+      rootDir: rootDir || "undefined",
+      distPath
+    });
+  });
+
+  app.get("/api/logs", (req, res) => {
+    res.json(requestLogs);
+  });
+
   app.post("/api/generate-summary", async (req, res) => {
     try {
       const { era, documents, educationLevel, focusTopic, customNotes } = req.body;
@@ -190,7 +219,10 @@ Garante que o conteúdo é historicamente exato, rigoroso e pedagógico. Adapta 
   if (!isProduction) {
     const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: { 
+        middlewareMode: true,
+        fs: { strict: false }
+      },
       appType: "spa",
       root: rootDir,
     });
