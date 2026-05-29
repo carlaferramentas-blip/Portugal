@@ -171,7 +171,7 @@ Garante que o conteúdo é historicamente exato, rigoroso e pedagógico. Adapta 
   });
 
   const isProduction = process.env.NODE_ENV === "production" || __filename.endsWith("server.cjs");
-  const distPath = isProduction ? __dirname : path.join(__dirname, "dist");
+  const distPath = path.join(process.cwd(), "dist");
 
   // Setup Vite Dev Server / Static files
   if (!isProduction) {
