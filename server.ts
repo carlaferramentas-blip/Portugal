@@ -170,8 +170,11 @@ Garante que o conteúdo é historicamente exato, rigoroso e pedagógico. Adapta 
     }
   });
 
+  const isProduction = process.env.NODE_ENV === "production" || __filename.endsWith("server.cjs");
+  const distPath = isProduction ? __dirname : path.join(__dirname, "dist");
+
   // Setup Vite Dev Server / Static files
-  if (process.env.NODE_ENV !== "production") {
+  if (!isProduction) {
     const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
       server: { middlewareMode: true },
@@ -179,7 +182,6 @@ Garante que o conteúdo é historicamente exato, rigoroso e pedagógico. Adapta 
     });
     app.use(vite.middlewares);
   } else {
-    const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath));
     app.get("*", (req, res) => {
       res.sendFile(path.join(distPath, "index.html"));
