@@ -1,0 +1,6 @@
+{
+  "name": "História de Portugal Interativa",
+  "description": "Uma aplicação web educacional e interativa para explorar a história de Portugal através de linhas do tempo, mapas de evolução territorial, documentos históricos em alta definição e resumos personalizados gerados por IA.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
