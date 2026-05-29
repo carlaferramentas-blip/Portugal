@@ -178,36 +178,23 @@ Garante que o conteúdo é historicamente exato, rigoroso e pedagógico. Adapta 
   });
 
   const isProduction = typeof __filename !== "undefined"
-    ? __filename.endsWith("server.cjs")
+    ? __filename.endsWith("server.cjs") || __filename.includes("/dist/")
     : (typeof import.meta !== "undefined" && import.meta.url
        ? import.meta.url.endsWith("server.cjs") || import.meta.url.includes("/dist/")
        : false);
 
-  const distPath = isProduction ? currentDirname : path.join(currentDirname, "dist");
+  const rootDir = process.cwd();
+  const distPath = path.join(rootDir, "dist");
 
   // Setup Vite Dev Server / Static files
   if (!isProduction) {
     const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
       server: { middlewareMode: true },
-      appType: "custom",
-      root: currentDirname,
+      appType: "spa",
+      root: rootDir,
     });
     app.use(vite.middlewares);
-
-    // Serve index.html dynamically with Vite transformation in dev mode
-    app.get("*", async (req, res, next) => {
-      const url = req.originalUrl;
-      try {
-        const fs = await import("fs");
-        let template = fs.readFileSync(path.resolve(currentDirname, "index.html"), "utf-8");
-        template = await vite.transformIndexHtml(url, template);
-        res.status(200).set({ "Content-Type": "text/html" }).end(template);
-      } catch (e) {
-        vite.ssrFixStacktrace(e as Error);
-        next(e);
-      }
-    });
   } else {
     app.use(express.static(distPath));
     app.get("*", (req, res) => {
