@@ -6,8 +6,15 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+let currentDirname: string;
+if (typeof __dirname !== "undefined") {
+  currentDirname = __dirname;
+} else if (import.meta && import.meta.url) {
+  const filename = fileURLToPath(import.meta.url);
+  currentDirname = path.dirname(filename);
+} else {
+  currentDirname = process.cwd();
+}
 
 async function startServer() {
   const app = express();
@@ -170,17 +177,39 @@ Garante que o conteúdo é historicamente exato, rigoroso e pedagógico. Adapta 
     }
   });
 
-  const isProduction = process.env.NODE_ENV === "production" || __filename.endsWith("server.cjs");
-  const distPath = path.join(process.cwd(), "dist");
+  let isProduction = false;
+  if (typeof __filename !== "undefined") {
+    isProduction = __filename.endsWith("server.cjs");
+  }
+  if (process.env.NODE_ENV === "production") {
+    isProduction = true;
+  }
+
+  const distPath = isProduction ? currentDirname : path.join(currentDirname, "dist");
 
   // Setup Vite Dev Server / Static files
   if (!isProduction) {
     const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
       server: { middlewareMode: true },
-      appType: "spa",
+      appType: "custom",
+      root: currentDirname,
     });
     app.use(vite.middlewares);
+
+    // Serve index.html dynamically with Vite transformation in dev mode
+    app.get("*", async (req, res, next) => {
+      const url = req.originalUrl;
+      try {
+        const fs = await import("fs");
+        let template = fs.readFileSync(path.resolve(currentDirname, "index.html"), "utf-8");
+        template = await vite.transformIndexHtml(url, template);
+        res.status(200).set({ "Content-Type": "text/html" }).end(template);
+      } catch (e) {
+        vite.ssrFixStacktrace(e as Error);
+        next(e);
+      }
+    });
   } else {
     app.use(express.static(distPath));
     app.get("*", (req, res) => {
